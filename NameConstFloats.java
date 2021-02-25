@@ -88,6 +88,9 @@ public class NameConstFloats extends GhidraScript {
 					case "32767.0":
 					newlabel="SHORT_MAX_"+ForD;
 					break;
+					case "-32767.0":
+					newlabel="SHORT_MIN_"+ForD;
+					break;
 					case "65535.0":
 					newlabel="USHORT_MAX_"+ForD;
 					break;

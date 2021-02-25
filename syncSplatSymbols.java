@@ -26,20 +26,27 @@ public class syncSplatSymbols extends GhidraScript {
 		SymbolTable st = currentProgram.getSymbolTable();
 		SymbolIterator it = st.getDefinedSymbols();
 		String act="";
+		String act2="";
 		File f = askFile("Where is symbol table?", "here");
 		if(!f.exists())f.createNewFile();
 		//read the new symbols
 		try(BufferedReader br = new BufferedReader(new FileReader(f))){
 			String line;
 			List<String> Choices=Arrays.asList(new String[] { "replace", "skip", "replace all", "skip all"});
+			List<String> Choices2=Arrays.asList(new String[] { "add", "skip", "add all", "skip all"});
 			while ((line = br.readLine()) != null) {
 				String[] splatEnt=line.split("[=;/]+");
 				try{
 				Address addr= toAddr(splatEnt[1]);
 				splatEnt[0]=SymbolUtilities.replaceInvalidChars(splatEnt[0],false);
 				Symbol s=st.getPrimarySymbol​(addr);
-				if(s!=null){if(!splatEnt[0].equals(s.getName())){
-					if(!act.equals("Skip all")||!act.equals("replace all")||!s.getName().startsWith("FUN_"))
+				// skip generic labels
+				if(!splatEnt[0].equals("D_"+addr.toString())&&!splatEnt[0].equals("func_"+addr.toString())&&!splatEnt[0].equals("DAT_"+addr.toString())){
+				// does entry exist?
+				if(s!=null){
+					if(!splatEnt[0].equals(s.getName())){
+					//rename existing entry
+					if(!act.equals("skip all")||!act.equals("replace all")||!s.getName().startsWith("FUN_"))
 						act=askChoice("rename", "rename "+s.getName()+" to "+splatEnt[0]+"?",Choices,"replace");
 					if(act.equals("replace all")||act.equals("replace")){
 						println("renaming "+s.getName()+" to "+splatEnt[0]+"");
@@ -47,7 +54,16 @@ public class syncSplatSymbols extends GhidraScript {
 						}
 					}
 				}
-				else{createLabel(addr,splatEnt[0],false);println("added: "+line);}}
+				//add new one
+				else{
+					if(!act2.equals("skip all")||!act.equals("add all")) act2=askChoice("add", "add "+splatEnt[0]+"?",Choices2,"add");
+					if(act2.equals("add all")||act2.equals("add")){
+						createLabel(addr,splatEnt[0],false);
+						println("added: "+line);
+						}
+					}
+				}
+				}
 				catch(Exception e){println(line+" is not a valid entry.");}
 			}
 		}
@@ -80,18 +96,25 @@ public class syncSplatSymbols extends GhidraScript {
 				catch(Exception e){}
 			}
 			//big sanitizer, could use regex.
-			String outp=SymbolUtilities.replaceInvalidChars(name,true).replace('?','_').replace(".","_").replace("-","_").replace("!","_")+" = 0x"+addr+"; "+Nline;
+			name=SymbolUtilities.replaceInvalidChars(name,true).replace('?','_').replace(".","_").replace("-","_").replace("!","_");
+			String outp=name+" = 0x"+addr+"; "+Nline;
 			boolean inFile=false;
 			try(BufferedReader br = new BufferedReader(new FileReader(f))){
 				String line;
 				while ((line = br.readLine()) != null) {
-					if(line.equals(outp)){
-						println(line+" exists.");
-						inFile=true;
-						break;
+					//check for duplicate names in file. for compiler's sake.
+					String[] ent=line.split(" ");
+					if(ent[0].equals(name)){
+						if(addr==toAddr(ent[2])){
+							println(name+" exists.");
+							inFile=true;
+							break;
+						}
+						println(name+" has duplicate name. renaming.");
+						outp=name+"_"+addr+" = 0x"+addr+"; "+Nline;
+						}
 					}
 				}
-			}
 			if(!inFile){
 			//overwrites, needs fixed
 			W.append(outp+"\n");
