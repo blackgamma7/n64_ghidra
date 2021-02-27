@@ -20,6 +20,17 @@ import ghidra.program.model.lang.*;
 import ghidra.program.model.pcode.*;
 import ghidra.program.model.address.*;
 
+/*
+Function:        snake_case
+Local Variable:        camelCase
+Global Variable:    gCamelCase
+Static Variable:    sCamelCase
+Enum:            PascalCase
+Struct Name:         PascalCase
+Define:            SNAKE_CASE_CAPS
+*/
+
+
 public class syncSplatSymbols extends GhidraScript {
 
     public void run() throws Exception {
@@ -46,9 +57,9 @@ public class syncSplatSymbols extends GhidraScript {
 				if(s!=null){
 					if(!splatEnt[0].equals(s.getName())){
 					//rename existing entry
-					if(!act.equals("skip all")||!act.equals("replace all")||!s.getName().startsWith("FUN_"))
+					if((!act.equals("skip all")||!act.equals("replace all"))&&!s.getName().startsWith("FUN_"))
 						act=askChoice("rename", "rename "+s.getName()+" to "+splatEnt[0]+"?",Choices,"replace");
-					if(act.equals("replace all")||act.equals("replace")){
+					if(act.equals("replace all")||act.equals("replace")||s.getName().startsWith("FUN_")){
 						println("renaming "+s.getName()+" to "+splatEnt[0]+"");
 						s.setName(splatEnt[0],SourceType.IMPORTED);
 						}
@@ -76,9 +87,11 @@ public class syncSplatSymbols extends GhidraScript {
 			Address addr = s.getAddress();
 			String name = s.getName();
 			//skip un-id'd funcs, jumptables, and other invalid symbols
-			if (name.startsWith("FUN_") || !addr.isMemoryAddress()||s.getParentSymbol().getName().startsWith("switchD")||name.startsWith("prt_"+addr.toString())||name.startsWith("thunk_FUN_")) continue;
-			//skip my custom label schemes
-			if(name.equals("Ofunc_"+addr.toString())||s.getParentSymbol().getName().equals("ConstFloats"))continue;
+			if (name.startsWith("FUN_") || !addr.isMemoryAddress()||s.getParentSymbol().getName().startsWith("switchD")||name.startsWith("prt_"+addr.toString())||name.startsWith("thunk_FUN_")||name.startsWith("_gp_")) continue;
+			//skip my custom label schemes. prefix '?' if you don't wanna share with the class.
+			if(name.equals("Ofunc_"+addr.toString())||s.getParentSymbol().getName().equals("ConstFloats")||name.startsWith('?'))continue;
+			//and just in case
+			if(name.endsWith('?'))continue;
 			//exclude specified namespaces
 			if(NSexclude.contains(s.getParentSymbol().getName()))continue;
 			//clean up labels for compiler's sake
