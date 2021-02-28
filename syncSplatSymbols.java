@@ -89,9 +89,9 @@ public class syncSplatSymbols extends GhidraScript {
 			//skip un-id'd funcs, jumptables, and other invalid symbols
 			if (name.startsWith("FUN_") || !addr.isMemoryAddress()||s.getParentSymbol().getName().startsWith("switchD")||name.startsWith("prt_"+addr.toString())||name.startsWith("thunk_FUN_")||name.startsWith("_gp_")) continue;
 			//skip my custom label schemes. prefix '?' if you don't wanna share with the class.
-			if(name.equals("Ofunc_"+addr.toString())||s.getParentSymbol().getName().equals("ConstFloats")||name.startsWith('?'))continue;
+			if(name.equals("Ofunc_"+addr.toString())||s.getParentSymbol().getName().equals("ConstFloats")||name.startsWith("?"))continue;
 			//and just in case
-			if(name.endsWith('?'))continue;
+			if(name.endsWith("?"))continue;
 			//exclude specified namespaces
 			if(NSexclude.contains(s.getParentSymbol().getName()))continue;
 			//clean up labels for compiler's sake
