@@ -29,6 +29,25 @@ public class NameConstFloats extends GhidraScript {
 		memory = currentProgram.getMemory();
 		symbolTable = currentProgram.getSymbolTable();
 		Data data = getFirstData();
+		//first iteration: find floats based on operand
+		while ((data != null) && (!monitor.isCancelled())) {
+		String n=data.getDataType().getName();
+		if (n.equals("undefined4")||n.equals("undefined8")){
+		Reference[] refs=symbolTable.getPrimarySymbol(data.getMinAddress()).getReferences();
+				for(Reference ref:refs){
+				  String opc=listing.getCodeUnitAt​(ref.getFromAddress()).getMnemonicString().toLowerCase();
+				  if(opc.equals("lwc1")||opc.equals("_lwc1")||opc.equals("swc1")){
+				  listing.clearCodeUnits​(data.getMinAddress(),data.getMaxAddress(),false);
+					  listing.createData​(data.getMinAddress(),new FloatDataType());break;}
+				  if(opc.equals("ldc1")||opc.equals("_ldc1")||opc.equals("sdc1")){
+				  listing.clearCodeUnits​(data.getMinAddress(),data.getMaxAddress(),false);
+					  listing.createData​(data.getMinAddress(),new DoubleDataType());break;}
+		}
+		}
+		data = getDataAfter(data);
+		}
+		data = getFirstData();
+		//second: name them if they're constant.
 		try{
 			symbolTable.createNameSpace(symbolTable.getNamespace​("Global",null),"ConstFloats",SourceType.USER_DEFINED);
 		}
