@@ -34,15 +34,19 @@ public class NameConstFloats extends GhidraScript {
 		String n=data.getDataType().getName();
 		if (n.equals("undefined4")||n.equals("undefined8")){
 		Reference[] refs=symbolTable.getPrimarySymbol(data.getMinAddress()).getReferences();
+		if(refs.length>0){
 				for(Reference ref:refs){
+				println(ref.getFromAddress().toString());
+				try{
 				  String opc=listing.getCodeUnitAt​(ref.getFromAddress()).getMnemonicString().toLowerCase();
 				  if(opc.equals("lwc1")||opc.equals("_lwc1")||opc.equals("swc1")){
 				  listing.clearCodeUnits​(data.getMinAddress(),data.getMaxAddress(),false);
 					  listing.createData​(data.getMinAddress(),new FloatDataType());break;}
 				  if(opc.equals("ldc1")||opc.equals("_ldc1")||opc.equals("sdc1")){
 				  listing.clearCodeUnits​(data.getMinAddress(),data.getMaxAddress(),false);
-					  listing.createData​(data.getMinAddress(),new DoubleDataType());break;}
-		}
+				listing.createData​(data.getMinAddress(),new DoubleDataType());break;}}
+				catch(Exception e){}
+		}}
 		}
 		data = getDataAfter(data);
 		}
