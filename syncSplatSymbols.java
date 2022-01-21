@@ -50,6 +50,7 @@ public class syncSplatSymbols extends GhidraScript {
 				try{
 				Address addr= toAddr(splatEnt[1]);
 				splatEnt[0]=SymbolUtilities.replaceInvalidChars(splatEnt[0],false);
+				if(splatEnt[0].contains("::")){splatEnt[0]=splatEnt[0].substring(splatEnt[0].lastIndexOf("::")+2);}
 				Symbol s=st.getPrimarySymbol​(addr);
 				// skip generic labels
 				if(!splatEnt[0].equals("D_"+addr.toString())&&!splatEnt[0].equals("func_"+addr.toString())&&!splatEnt[0].equals("DAT_"+addr.toString())){
@@ -57,8 +58,9 @@ public class syncSplatSymbols extends GhidraScript {
 				if(s!=null){
 					if(!splatEnt[0].equals(s.getName())){
 					//rename existing entry
-					if((!act.equals("skip all")||!act.equals("replace all"))&&!s.getName().startsWith("FUN_"))
-						act=askChoice("rename", "rename "+s.getName()+" to "+splatEnt[0]+"?",Choices,"replace");
+					if(act.equals("skip all")){continue;}
+					if((!act.equals("skip all")||!act.equals("replace all"))&&!s.getName().startsWith("FUN_")) 
+					{act=askChoice("rename", "rename "+s.getName()+" to "+splatEnt[0]+"?",Choices,"rename");}
 					if(act.equals("replace all")||act.equals("replace")||s.getName().startsWith("FUN_")){
 						println("renaming "+s.getName()+" to "+splatEnt[0]+"");
 						s.setName(splatEnt[0],SourceType.IMPORTED);
@@ -80,7 +82,9 @@ public class syncSplatSymbols extends GhidraScript {
 		}
 		//add to the table
 		FileWriter W = new FileWriter(f);
-		String NamespaceExclude = askString("exclude nameSpaces?","are there any namespaces you wish to leave out?\nSeperate with commas");
+		//String NamespaceExclude = askString("exclude nameSpaces?","are there any namespaces you wish to leave out?\nSeperate with commas");
+		String NamespaceExclude="_";
+		boolean getFuncSize =askYesNo("EXPERIMENTAL: add function size?","Do you wish to add the function size to the list? (EXPERIMENTAL: KNOWN TO BE INACCURATE)");
 		List<String> NSexclude=Arrays.asList(NamespaceExclude.split(","));
 		while (it.hasNext() && !monitor.isCancelled()) {
 			Symbol s = it.next();
@@ -99,17 +103,49 @@ public class syncSplatSymbols extends GhidraScript {
 			if(name.startsWith("-")){name=name.replaceFirst("-","neg");}
 			//inline labeling
 			String Nline ="// ";
-			if(s.getSymbolType()==SymbolType.FUNCTION){Nline+="type:func";}
+			if(s.getSymbolType()==SymbolType.FUNCTION){
+				Nline+="type:func";
+				try{
+					long datSize=getFunctionAt(addr).getBody().getNumAddresses();
+					if(datSize>0&&getFuncSize) Nline+=" size:0x"+Long.toHexString(datSize);
+					}
+					catch(Exception e){}
+				}
 			else{
 				Nline+="type:data";
 				try{
 					int datSize=getDataAt(addr).getBaseDataType().getLength();
-					if(datSize>0) Nline+=" size:0x"+Integer.toHexString(datSize);
+					if(datSize>0) Nline+=" size:0x"+Long.toHexString(datSize);
 				}
 				catch(Exception e){}
 			}
+			//Add rom offset.
+			
+			if(addr.getAddressSpace().isOverlaySpace()){
+				Nline+=" rom: 0x"+Long.toHexString(currentProgram.getMemory().getAddressSourceInfo(addr).getFileOffset());
+			}
+			
+			else if((addr.subtract(getMemoryBlock(".ram").getStart())>0)){
+			   	if((addr.getOffset()>=0xA0000000)&&(addr.getOffset()<0xB0000000)){continue;}//Not Register address?
+				//if in rom, just get the physical address. IF I CAN GET THIS TO WORK.
+				//if(addr.subtract(0xB0000000).getOffset()>=0){Nline+=" rom:0x"+Long.toHexString(addr.getOffset()-0xB0000000);}
+				//check for bss.
+				try{
+					if(addr.subtract(getMemoryBlock(".ram.bss").getStart())<0){
+						Nline+=" rom:0x"+Long.toHexString(addr.subtract(getMemoryBlock(".ram").getStart())+0x1000);
+					}
+				}
+				catch(Exception e){
+					println("plase identify the bss of the program and name the memory block \".ram.bss\" first.\nHint: \'entrypoint\' clears it out.");
+					return;
+				}
+			}
 			//big sanitizer, could use regex.
 			name=SymbolUtilities.replaceInvalidChars(name,true).replace('?','_').replace(".","_").replace("-","_").replace("!","_");
+			String ns=s.getParentNamespace().getName();
+			if(ns!=null&&!ns.equals("os")&&!ns.equals("ConstFloats")
+			 &&!s.isGlobal()&&s.getParentSymbol().getSymbolType()!=SymbolType.FUNCTION)
+			  {name=ns+"::"+name;}
 			String outp=name+" = 0x"+addr+"; "+Nline;
 			boolean inFile=false;
 			try(BufferedReader br = new BufferedReader(new FileReader(f))){
@@ -117,7 +153,7 @@ public class syncSplatSymbols extends GhidraScript {
 				while ((line = br.readLine()) != null) {
 					//check for duplicate names in file. for compiler's sake.
 					String[] ent=line.split(" ");
-					if(ent[0].equals(name)){
+					if(ent[0].equals(name)&&s.getParentSymbol().getSymbolType()!=SymbolType.FUNCTION){
 						if(addr==toAddr(ent[2])){
 							println(name+" exists.");
 							inFile=true;
