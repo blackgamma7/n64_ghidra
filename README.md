@@ -2,6 +2,7 @@
 
 a few Ghidra tools devloped for reverse-engineering Nintendo64 titles.
 
+* **GhidraNotes.md** A quick guide on what to expect when reverse-engineering programs with the software, specifically those of the relevant platform.
 * **N64 OS.gdt** an archive file of common N64 OS structures, typedefs and functions. Incomplete, but a decent jumping-off point.
 * **exportSymbolPJ64** dumps a symbol table readable by Project 64.
 * **renameOrphanFunctions** looks for orphaned functions and labels them "Ofunc_address"
