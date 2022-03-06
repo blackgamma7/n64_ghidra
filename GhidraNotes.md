@@ -18,7 +18,7 @@ void ForLoopExample(void){
   return;
 }
 ```
-In this instance, "uVar1" would be the incrementing value, and it's type would be that of an unsigned char. Thus, a more accurate representation of the code would be:
+In this instance, `uVar1` would be the incrementing value, and it's type would be that of an unsigned char. Thus, a more accurate representation of the code would be:
 ```
 void ForLoopExample(void){
   byte uVar1; //or whatever typedef you prefer
@@ -48,7 +48,7 @@ you may change these within the decompiled function, but code will be added to e
 You may find functions that, when called, have paramaters set, but when viewing the function, it's blank. An example below:
 ```
 //code code code
-FuncWith2Args(x,y)
+FuncWith2Args(x,y);
 //code code code
 void FuncWith2Args(void){
   return;
@@ -74,12 +74,13 @@ void start(void){
   do{
     uVar2=uVar2-4;
     *puVar1=0;
+    puVar1=puVar1+1;
   }while(uVar2!=0);
   //more init code
   return; //or "while(true){}" in some cases.
 }
 ```
-in this case, DAT_XXXXXXXX refers to the start of the .bss section, and 0xYYYYY its size. Go into Memory Map, split the .ram section from XXXXXXXX and then split it again, giving the first split a size of YYYYY and untick the "initalized" checkbox.
+in this case, `DAT_XXXXXXXX` refers to the start of the .bss section, and `0xYYYYY` its size. Go into Memory Map, split the .ram section from `XXXXXXXX` and then split it again, giving the first split a size of `YYYYY` and untick the "initalized" checkbox.
 Also note that such code is usually asm.
 
 ## Nintendo 64 specific
@@ -105,7 +106,7 @@ void BranchIssueExample(int x){
   return;
 }
 ```
-the instruction to load y->someField was duplicated by the compiler for efficency, but it threw off the decompiler. With that in mind, it would be more accurate to write the code as:
+the instruction to load `y->someField` was duplicated by the compiler for efficency, but it threw off the decompiler. With that in mind, it would be more accurate to write the code as:
 ```
 void BranchIssueExample(int x){
  someStruct* y;
@@ -132,7 +133,7 @@ void MIPS1DoublesIssue(void){
   return;
 }
 ```
-this is currently a compatibility issue with Ghidra. in_register_00001020 in this case refers to the f5 FPU register. Again, this issue may be resolved in other revisions after the time of this writing.
+this is currently a compatibility issue with Ghidra. `in_register_00001020` in this case refers to the `f5` FPU register. Again, this issue may be resolved in other revisions after the time of this writing.
 
 ### The N64 is 64-bit...ish.
 
@@ -159,7 +160,7 @@ void Move64Bitglobals(void){
 
 ### Arguments and returns are 32-bit, and floats are weird.
 
-Like with the above example, arguments and return values are stored in the bottom half of the applicable register (except for doubles when not compiled in MIPS 1).  This means if the value is 64-bit and not in the argument stack (starting at 0x10, after the  4 aX registers are loaded) then it will be split into 2 registers. As such, if you believe the return or argument to be 64-bit, you should follow the example below when editing the function:
+Like with the above example, arguments and return values are stored in the bottom half of the applicable register (except for doubles when not compiled in MIPS 1).  This means if the value is 64-bit and not in the argument stack (starting at 0x10, after the  4 `aX` registers are loaded) then it will be split into 2 registers. As such, if you believe the return or argument to be 64-bit, you should follow the example below when editing the function:
 ```
 longlong FuncWith64BitArgsAndReturn(longlong x, longlong y, longlong z)
 
@@ -169,7 +170,7 @@ longlong | y        | a2_lo:4,a3_lo:4
 longlong | z        | stack[0x10]:8
 ```
 
-float arguments have some unique rules. Ghidra defaults to having the first 2 declared in the f12 and f14 registers respectively. In truth, it's a bit more complicated. if the first two arguments are floats, then yes, they would be f12 and f14, and any further args would skip the first and/or second aX registers:
+float arguments have some unique rules. Ghidra defaults to having the first 2 declared in the `f12` and `f14` registers respectively. In truth, it's a bit more complicated. if the first two arguments are floats, then yes, they would be f12 and f14, and any further args would skip the first and/or second aX registers:
 ```
 void StartsWith2Floats(float x, float y, int z, float w)
 
@@ -179,11 +180,11 @@ float | y        | f14:4
 int   | z        | a2_lo:4
 float | w        | a3_lo:4
 ```
-furthermore, if the first argument is NOT a float, this is ignored and it follows the aformentioned rule of "first 4 in aX, rest in stack" with f12 and f14 not used at all:
+furthermore, if the first argument is NOT a float, this is ignored and it follows the aformentioned rule of "first 4 in `aX`, rest in stack" with f12 and f14 not used at all:
 ```
 float StartsWithAPointer(void* p, float x, float y, float z, float w)
 
-float | <RETURN> | f2
+float | <RETURN> | f2:4
 void* | p        | a0_lo:4
 float | x        | a1_lo:4
 float | y        | a2_lo:4
