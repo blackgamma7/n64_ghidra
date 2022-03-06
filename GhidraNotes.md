@@ -62,7 +62,7 @@ void FuncWith2Args(int x, float y){
 ```
 also note the "blank" instruction itself may be a dummied printf or sprintf function. You can identify these if one of the first 2 arguments are pointers to strings with format specifiers ("%d,%c,%x",ect).
 
-##.bss
+## .bss
 While most loaders are smart enough to recognize this section of the code - where data is zeroed due to not having an inital value - some do not have this feature. This can be due to it not yet being implimented or variations on how that section is cleared. Typically, it is amoung the first set of instructions in the program, and can often look like this:
 ```
 void start(void){
@@ -82,7 +82,7 @@ void start(void){
 in this case, DAT_XXXXXXXX refers to the start of the .bss section, and 0xYYYYY its size. Go into Memory Map, split the .ram section from XXXXXXXX and then split it again, giving the first split a size of YYYYY and untick the "initalized" checkbox.
 Also note that such code is usually asm.
 
-##Nintendo 64 specific
+## Nintendo 64 specific
 
 ### Mips jump/branch/call
 
