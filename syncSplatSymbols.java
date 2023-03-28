@@ -14,6 +14,8 @@ import ghidra.program.model.block.*;
 import ghidra.program.model.symbol.*;
 import ghidra.program.model.mem.*;
 import ghidra.program.model.listing.*;
+import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.FunctionIterator;
 import ghidra.program.model.address.*;
 
 public class syncSplatSymbols extends GhidraScript {
@@ -90,8 +92,6 @@ public class syncSplatSymbols extends GhidraScript {
 		String NamespaceExclude = "_";
 		// dirty kludge to add splat's PSX compatibility
 		boolean IsPSX = currentProgram.getExecutableFormat().equals("PSX Executables Loader");
-		boolean getFuncSize = askYesNo("EXPERIMENTAL: add function size?",
-				"Do you wish to add the function size to the list? (EXPERIMENTAL: KNOWN TO BE INACCURATE)");
 		List<String> NSexclude = Arrays.asList(NamespaceExclude.split(","));
 		while (it.hasNext() && !monitor.isCancelled()) {
 			Symbol s = it.next();
@@ -124,19 +124,60 @@ public class syncSplatSymbols extends GhidraScript {
 			String Nline = "// ";
 			if (s.getSymbolType() == SymbolType.FUNCTION) {
 				Nline += "type:func";
-				if (getFuncSize) {
-					try {
-						long datSize = getFunctionAt(addr).getBody().getNumAddresses(); // this is sometimes an
-																						// instruction off, beware,
-						if (datSize > 0)
-							Nline += " size:0x" + Long.toHexString(datSize);
-					} catch (Exception e) {
-					}
-				}
-			} else {
-				Nline += "type:data";
+				// getting code size problematic, feature removed.
+			} else if (getDataAt​(addr)!=null){
+			   DataType dat = getDataAt​(addr).getBaseDataType();
+			   if(getDataAt(addr).hasStringValue()){
+			   Nline += "type:asciz";
+			   } else{
+			   	switch(dat.getName().toLowerCase()){
+				default:
+				break;
+				case "undefined4":
+				case "uint":
+				Nline += "type:u32";
+				break;
+				case "undefined2":
+				case "ushort":
+				Nline += "type:u16";
+				break;
+				case "float":
+				Nline += "type:f32";
+				break;
+				case "double":
+				Nline += "type:f64";
+				break;
+				case "undefined1":
+				case "byte":
+				case "bool":
+				Nline += "type:u8";
+				break;
+				case "char":
+				case "s8":
+				case "sbyte":
+				Nline += "type:s8";
+				break;
+				case "short":
+				case "s16":
+				Nline += "type:s16";
+				break;
+				case "int":
+				Nline += "type:s32";
+				break;
+				case "undefined8":
+				case "ulonglong":
+				case "u64":
+				Nline += "type:u64";
+				break;
+				case "longlong":
+				Nline += "type:s64";
+				case "float[3]":
+				case "vec3f":
+				Nline += "type:vec3f";
+				break;
+			   }}
 				try {
-					int datSize = getDataAt(addr).getBaseDataType().getLength();
+					int datSize = dat.getLength();
 					if (datSize > 0)
 						Nline += " size:0x" + Long.toHexString(datSize);
 				} catch (Exception e) {
