@@ -46,9 +46,9 @@ public class syncSplatSymbols extends GhidraScript {
 					if (splatEnt[0].contains("::")) {
 						splatEnt[0] = splatEnt[0].substring(splatEnt[0].lastIndexOf("::") + 2);
 					}
-					Symbol s = st.getPrimarySymbol​(addr);
+					Symbol s = st.getPrimarySymbol(addr);
 					// skip generic labels
-					if (!splatEnt[0].equals("D_" + addr.toString()) && !splatEnt[0].equals("func_" + addr.toString())
+					if (!splatEnt[0].toLowerCase().equals("d_" + addr.toString()) && !splatEnt[0].toLowerCase().equals("func_" + addr.toString())
 							&& !splatEnt[0].equals("DAT_" + addr.toString())
 							&& !splatEnt[0].equals("D_" + addr.toString().toUpperCase())) {
 						// does entry exist?
@@ -72,7 +72,11 @@ public class syncSplatSymbols extends GhidraScript {
 						}
 						// add new one
 						else {
-							if (!act2.equals("skip all") || !act.equals("add all"))
+						    if(act2.equals("add all")){
+								createLabel(addr, splatEnt[0], false);
+								println("added: " + line);							
+							}
+							else if (!(act2.equals("skip all")) && !(act.equals("add all")))
 								act2 = askChoice("add", "add " + splatEnt[0] + "?", Choices2, "add");
 							if (act2.equals("add all") || act2.equals("add")) {
 								createLabel(addr, splatEnt[0], false);
@@ -97,6 +101,7 @@ public class syncSplatSymbols extends GhidraScript {
 			Symbol s = it.next();
 			Address addr = s.getAddress();
 			String name = s.getName();
+			if(s.getParentSymbol().getSymbolType()==SymbolType.FUNCTION) continue;
 			// skip un-id'd funcs, jumptables, and other invalid symbols
 			if (name.startsWith("FUN_") || !addr.isMemoryAddress()
 					|| s.getParentSymbol().getName().startsWith("switchD") || name.startsWith("prt_" + addr.toString())
@@ -125,8 +130,8 @@ public class syncSplatSymbols extends GhidraScript {
 			if (s.getSymbolType() == SymbolType.FUNCTION) {
 				Nline += "type:func";
 				// getting code size problematic, feature removed.
-			} else if (getDataAt​(addr)!=null){
-			   DataType dat = getDataAt​(addr).getBaseDataType();
+			} else if (getDataAt(addr)!=null){
+			   DataType dat = getDataAt(addr).getBaseDataType();
 			   if(getDataAt(addr).hasStringValue()){
 			   Nline += "type:asciz";
 			   } else{
