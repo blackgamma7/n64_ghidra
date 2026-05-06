@@ -28,7 +28,7 @@ void ForLoopExample(void){
   }
 }
 ```
-A for-loop may also start with a check if the value checked against in the "while" section is non-zero.
+A for-loop may also start with a check if the value checked against in the "while" section is a variable.
 ```
 void ForLoopExample2(byte x){
   uint uVar1;
