@@ -28,6 +28,21 @@ void ForLoopExample(void){
   }
 }
 ```
+A for-loop may also start with a check if the value checked against in the "while" section is non-zero.
+```
+void ForLoopExample2(byte x){
+  uint uVar1;
+
+  uVar1=0;
+if(x != 0){
+  do{
+    //some code
+    uVar1 = uVar1 + 1 & 0xFF;
+  }while( Uvar1 < x);
+}
+  return;
+}
+```
 
 ## Ghidra doesn't always recognize integer types
 
@@ -62,6 +77,46 @@ void FuncWith2Args(int x, float y){
 ```
 also note the "blank" instruction itself may be a dummied printf or sprintf function. You can identify these if one of the first 2 arguments are pointers to strings with format specifiers ("%d,%c,%x",ect).
 
+### Case-Switches with few cases become tangled if-else
+As an optimization, compilers may not generate a jumptable for Case-Switches with 4 or fewer cases.
+This can turn into code that looks more like a messy if-else and goto's:
+```
+if(true){
+    bVar1 = x;
+    if (bVar1 == 9) break;
+    if (bVar1 < 10) goto code_rxxxxxx;
+    if ((bVar1 != 10) && (bVar1 == 0xb)) {
+      FUN_80XXXXXX();
+    }
+}
+  gGlobal.feildA = 2;
+  gGlobal.fieldB = 0.05f;
+  goto LAB_800YYYYY;
+code_rxxxxxx:
+  if (bVar1 == 6) {
+    gGlobal.feildA  = 1;
+    gGlobal.feildB = 0.05f;
+LAB_800YYYYY:
+    gGlobal.feildC = 1;
+```
+It may be more accurate to document this as:
+```
+switch(x) {
+          case 6:
+            gGlobal.feildC = 1;
+            gGlobal.feildA = 1;
+            gGlobal.fieldB = 0.05f;
+            break;
+          case 9:
+            gGlobal.feildC = 1;
+            gGlobal.feildA = 2;
+            gGlobal.fieldB = 0.05f;
+            break;
+          case 11:
+            FUN_80XXXXXX();
+          }
+```
+
 ## .bss
 While most loaders are smart enough to recognize this section of the code - where data is zeroed due to not having an inital value - some do not have this feature. This can be due to it not yet being implimented or variations on how that section is cleared. Typically, it is amoung the first set of instructions in the program, and can often look like this:
 ```
@@ -82,6 +137,7 @@ void start(void){
 ```
 in this case, `DAT_XXXXXXXX` refers to the start of the .bss section, and `0xYYYYY` its size. Go into Memory Map, split the .ram section from `XXXXXXXX` and then split it again, giving the first split a size of `YYYYY` and untick the "initalized" checkbox.
 Also note that such code is usually asm.
+
 
 ## Nintendo 64 specific
 
@@ -121,6 +177,21 @@ void BranchIssueExample(int x){
 }
 ```
 
+### Modulo can get messy
+The Modulo operation is one that gets broken down when using RISC nistructions. 
+As such, they can appear muddled by Ghria's intrepetation:
+```
+iVar2 = param_1->somefield + 1;
+iVar1 = iVar2;
+if (false) {
+  iVar1 = param_1->somefield + 0x10;
+}
+param_1->somefield = (short)iVar2 + (short)(iVar1 >> 4) * -0x10;
+```
+It may be more accurate to write the above as:
+```
+param_1->somefield = (param_1->somefield+1)%16;
+```
 
 ### Mips 1 doubles
 
